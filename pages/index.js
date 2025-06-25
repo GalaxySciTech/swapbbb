@@ -16,6 +16,7 @@ const PayDeposit = () => {
   const [eurPrice, setEurPrice] = useState(0);
   const [priceLoading, setPriceLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [addressPrefix, setAddressPrefix] = useState("0x"); // "0x" or "xdc"
 
   // 使用 wagmi 获取地址余额
   const {
@@ -56,6 +57,15 @@ const PayDeposit = () => {
       console.error("复制失败:", err);
       alert("复制失败，请手动复制地址");
     }
+  };
+
+  // 转换地址显示格式
+  const getDisplayAddress = (addr) => {
+    if (!addr) return "";
+    if (addressPrefix === "xdc") {
+      return addr.replace(/^0x/, "xdc");
+    }
+    return addr;
   };
 
   useEffect(() => {
@@ -178,18 +188,42 @@ const PayDeposit = () => {
                 <div className="space-y-6">
                   {/* Address Input */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Deposit Address
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Deposit Address
+                      </label>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setAddressPrefix("0x")}
+                          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                            addressPrefix === "0x"
+                              ? "bg-blue-100 text-blue-700 border border-blue-300"
+                              : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                          }`}
+                        >
+                          0x
+                        </button>
+                        <button
+                          onClick={() => setAddressPrefix("xdc")}
+                          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                            addressPrefix === "xdc"
+                              ? "bg-blue-100 text-blue-700 border border-blue-300"
+                              : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                          }`}
+                        >
+                          xdc
+                        </button>
+                      </div>
+                    </div>
                     <div className="relative">
                       <div className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg bg-gray-50 font-mono text-xs sm:text-sm min-h-[3rem] flex items-center break-all leading-relaxed">
                         <span className="text-gray-700">
-                          {address || "Address will appear here..."}
+                          {getDisplayAddress(address) || "Address will appear here..."}
                         </span>
                       </div>
                       {address && (
                         <button
-                          onClick={() => copyToClipboard(address)}
+                          onClick={() => copyToClipboard(getDisplayAddress(address))}
                           className={`absolute right-3 top-3 p-1 focus:outline-none rounded transition-colors ${
                             copySuccess
                               ? "text-green-600 bg-green-100"
