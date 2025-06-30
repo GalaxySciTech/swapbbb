@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { useBalance } from "wagmi";
-import { formatEther } from "viem";
 import rpc from "@/components/Rpc";
 import Loading from "@/components/Loading";
-import { getXDCPrice } from "@/components/Utils";
 import { QRCodeSVG } from "qrcode.react";
 
 const PayDeposit = () => {
@@ -13,19 +10,8 @@ const PayDeposit = () => {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [eurPrice, setEurPrice] = useState(0);
-  const [priceLoading, setPriceLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [addressPrefix, setAddressPrefix] = useState("0x"); // "0x" or "xdc"
-
-  // 使用 wagmi 获取地址余额
-  const {
-    data: balanceData,
-    isLoading: balanceLoading,
-    error: balanceError,
-  } = useBalance({
-    address: address,
-  });
 
   const copyToClipboard = async (text) => {
     try {
@@ -71,7 +57,6 @@ const PayDeposit = () => {
   useEffect(() => {
     if (id) {
       fetchAddress();
-      fetchPrices();
     }
   }, [id]);
 
@@ -94,39 +79,7 @@ const PayDeposit = () => {
     }
   };
 
-  const fetchPrices = async () => {
-    try {
-      setPriceLoading(true);
 
-      // 获取 XDC 价格（美元）
-      const xdcData = await getXDCPrice();
-      const xdcUsdPrice = Number(xdcData?.price) || 0.04; // 确保是数字，设置默认值
-
-      // 获取 EUR/USD 汇率并计算 XDC 的欧元价格
-      try {
-        const eurResponse = await fetch(
-          "https://api.exchangerate-api.com/v4/latest/USD"
-        );
-        if (eurResponse.ok) {
-          const eurData = await eurResponse.json();
-          const eurRate = Number(eurData.rates?.EUR) || 0.85; // 默认汇率
-          setEurPrice(xdcUsdPrice * eurRate);
-        } else {
-          // 如果获取汇率失败，使用默认汇率 0.85
-          setEurPrice(xdcUsdPrice * 0.85);
-        }
-      } catch (eurErr) {
-        console.error("Error fetching EUR rate:", eurErr);
-        setEurPrice(xdcUsdPrice * 0.85);
-      }
-    } catch (err) {
-      console.error("Error fetching prices:", err);
-      // 设置默认值
-      setEurPrice(0.034);
-    } finally {
-      setPriceLoading(false);
-    }
-  };
 
   if (!id) {
     return (
@@ -282,56 +235,7 @@ const PayDeposit = () => {
                   )}
                 </div>
 
-                {/* Balance Information */}
-                {address && (
-                                      <div className="grid grid-cols-2 gap-4">
-                    {/* XDC Balance */}
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-600 mb-1">
-                          XDC Balance
-                        </p>
-                        <p className="text-sm font-bold text-gray-900 break-all leading-tight">
-                          {balanceLoading ? (
-                            <span className="text-sm">Loading...</span>
-                          ) : balanceError ? (
-                            <span className="text-sm text-red-500">
-                              Error
-                            </span>
-                          ) : (
-                            `${parseFloat(
-                              formatEther(balanceData?.value || 0)
-                            ).toLocaleString()} XDC`
-                          )}
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* EUR Value */}
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-600 mb-1">
-                          EUR Value
-                        </p>
-                        <p className="text-sm font-bold text-gray-900 break-all leading-tight">
-                          {priceLoading || balanceLoading ? (
-                            <span className="text-sm">Loading...</span>
-                          ) : balanceError ? (
-                            <span className="text-sm text-red-500">
-                              Error
-                            </span>
-                          ) : (
-                            `€${(
-                              parseFloat(
-                                formatEther(balanceData?.value || 0)
-                              ) * (Number(eurPrice) || 0)
-                            ).toFixed(2)}`
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
